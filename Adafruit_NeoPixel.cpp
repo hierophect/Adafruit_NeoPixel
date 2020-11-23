@@ -100,6 +100,9 @@ Adafruit_NeoPixel::Adafruit_NeoPixel() :
 Adafruit_NeoPixel::~Adafruit_NeoPixel() {
   free(pixels);
   if(pin >= 0) pinMode(pin, INPUT);
+#if defined(ESP32not)
+  rmtDeinit(_rmt);
+#endif
 }
 
 /*!
@@ -107,8 +110,13 @@ Adafruit_NeoPixel::~Adafruit_NeoPixel() {
 */
 void Adafruit_NeoPixel::begin(void) {
   if(pin >= 0) {
+#if defined(ESP32not)
+    _rmt = rmtInit(pin, true, RMT_MEM_64);
+    rmtSetTick(_rmt, 100);
+#else
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
+#endif
   }
   begun = true;
 }
@@ -177,8 +185,10 @@ void Adafruit_NeoPixel::updateType(neoPixelType t) {
 extern "C" void ICACHE_RAM_ATTR espShow(
   uint16_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
 #elif defined(ESP32)
+
 extern "C" void espShow(
-  uint16_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
+  rmt_obj_t* rmt, uint16_t pin, uint8_t *pixels, uint32_t numBytes, uint8_t type);
+
 #endif // ESP8266
 
 #if defined(K210) 
@@ -2103,12 +2113,15 @@ void Adafruit_NeoPixel::show(void) {
 // END ARM ----------------------------------------------------------------
 
 
-#elif defined(ESP8266) || defined(ESP32)
+#elif defined(ESP8266)
 
 // ESP8266 ----------------------------------------------------------------
 
   // ESP8266 show() is external to enforce ICACHE_RAM_ATTR execution
   espShow(pin, pixels, numBytes, is800KHz);
+
+#elif defined(ESP32)
+  espShow(_rmt, pin, pixels, numBytes, is800KHz);
 
 #elif defined(KENDRYTE_K210)
 

@@ -361,6 +361,9 @@ class Adafruit_NeoPixel {
   GPIO_TypeDef *gpioPort;       ///< Output GPIO PORT
   uint32_t gpioPin;             ///< Output GPIO PIN
 #endif
+#if defined(ESP32)
+  rmt_obj_t* _rmt;
+#endif
 };
 
 #endif // ADAFRUIT_NEOPIXEL_H
